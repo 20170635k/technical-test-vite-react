@@ -1,4 +1,5 @@
-import { IProductOrderView } from "../../utils/interfaces/product.interface";
+
+import {useParams} from 'react-router-dom'
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -14,55 +15,48 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ModeEditIcon from "@mui/icons-material/ModeEdit";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
-import { IOrder, IOrderResponse } from "../../utils/interfaces/order.interface";
+import { IOrder, IOrderResponseDetail, IOrderTableView } from "../../utils/interfaces/order.interface";
 
 // form
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import { useEffect, useState } from "react";
 import { AddProductToOrder } from "./AddProductToOrder";
+import OrderService from '../../core/services/Order.service';
+import { sumTotalOrders } from '../../utils/functions/product.functions';
 
-export function AddEdit(props: { edit: boolean; order: IOrderResponse }) {
-  let title = props.edit ? "Edit Order" : "Add Order";
+export function AddEdit() {
+  
+  const { id } = useParams();
+  let title = id ? "Edit Order" : "Add Order";
+
 
   const [dataForm, setDataForm] = useState<IOrder>({
     orderNumber: 0,
-    date: "",
+    date: new Date().toLocaleString(),
     countProducts: 0,
     finalPrice: 0,
     products: [],
   });
 
   useEffect(() => {
-    console.log(props.order);
-    initForm(props.edit, props.order);
+    if(id){
+      OrderService.getOrderById(Number(id)).then(resp=>{
+        console.log("testing: ",resp.data)
+        initForm(resp.data);
+      })
+    }
   }, []);
 
-  const initForm = (edit: boolean, order: IOrderResponse) => {
+  const initForm = (order: IOrderResponseDetail) => {
     let initFormData: IOrder = {
-      orderNumber: 0,
-      date: "",
-      countProducts: 0,
-      finalPrice: 0,
-      products: [],
+      orderNumber: order.number,
+      date: order.date,
+      countProducts: order.orders.length,
+      finalPrice:sumTotalOrders(order.orders),
+      products: order.orders,
     };
-    if (!edit) {
-      initFormData = {
-        orderNumber: 0,
-        date: new Date().toLocaleString(),
-        countProducts: 0,
-        finalPrice: 0,
-        products: [],
-      };
-    } else {
-      initFormData = {
-        orderNumber: order.orderNumber,
-        date: order.date,
-        countProducts: order.countProducts,
-        finalPrice: order.finalPrice,
-        products: order.products,
-      };
-    }
+
     setDataForm(initFormData);
   };
 
@@ -135,16 +129,16 @@ export function AddEdit(props: { edit: boolean; order: IOrderResponse }) {
           <TableBody>
             {dataForm?.products.map((productOrder) => (
               <TableRow
-                key={productOrder.name}
+                key={productOrder.product.name}
                 sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
               >
                 <TableCell component="th" scope="row">
                   {productOrder.id}
                 </TableCell>
-                <TableCell align="right">{productOrder.name}</TableCell>
-                <TableCell align="right">{productOrder.unitPrice}</TableCell>
+                <TableCell align="right">{productOrder.product.name}</TableCell>
+                <TableCell align="right">{productOrder.product.price}</TableCell>
                 <TableCell align="right">{productOrder.quantity}</TableCell>
-                <TableCell align="right">{productOrder.total}</TableCell>
+                <TableCell align="right">{productOrder.quantity*productOrder.product.price}</TableCell>
                 <TableCell align="right">
                   <Stack direction="row" alignItems="center" spacing={2}>
                     <Tooltip title="Edit">

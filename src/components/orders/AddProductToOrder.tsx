@@ -19,7 +19,7 @@ import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import Select, { SelectChangeEvent } from "@mui/material/Select";
 import { IProductResponse } from "../../utils/interfaces/product.interface";
-import ProductService from "../../core/services/Product.Service";
+import ProductService from "../../core/services/Product.service";
 
 const style = {
   position: "absolute" as "absolute",

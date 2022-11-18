@@ -16,10 +16,3 @@ export interface IProductOrder{
     unitPrice:number,
     quantity:number
 }
-export interface IProductOrderView{
-    id:number,
-    name:string,
-    unitPrice:number,
-    quantity:number,
-    total:number
-}

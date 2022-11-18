@@ -1,4 +1,4 @@
-import { IProductResponse } from './../../utils/interfaces/product.interface';
+import { IProductResponse } from '../../utils/interfaces/product.interface';
 import axios from 'axios'
 
 class ProductService{
