@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import OrderService from "../../core/services/Order.service";
 import { IOrderResponseDetail } from "../../utils/interfaces/order.interface";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -23,6 +23,13 @@ import {
   IOrderTableView,
 } from "../../utils/interfaces/order.interface";
 
+//dialog delete
+
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogTitle from "@mui/material/DialogTitle";
+
+
 // form
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
@@ -30,6 +37,25 @@ import { sumTotalOrders } from "../../utils/functions/product.functions";
 
 function ListOrders() {
   const [orders, setOrders] = useState<IOrderTableView[]>([]);
+  const [indexDelete, setIndexDelete] = useState<number>(0);
+  const [dialogDelete, setDialogDelete] = useState<boolean>(false);
+
+  let navigate = useNavigate();
+
+  const handleDelete = (index: number) => {
+    setIndexDelete(index);
+    setDialogDelete(true);
+  };
+
+  const handleDeleteClose = (del:boolean)=>{
+    if (del) {
+      OrderService.delete(orders[indexDelete].id)
+      navigate("/orders", { replace: true });
+      window.location.reload();
+    }
+    setIndexDelete(0);
+    setDialogDelete(false);
+  }
 
   useEffect(() => {
     OrderService.getAll().then((resp) => {
@@ -47,6 +73,23 @@ function ListOrders() {
 
   return (
     <>
+    <Dialog
+        open={dialogDelete}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Are you sure you want to delete the order?"}
+        </DialogTitle>
+
+        <DialogActions>
+          <Button onClick={() => handleDeleteClose(false)}>Disagree</Button>
+          <Button onClick={() => handleDeleteClose(true)} autoFocus>
+            Agree
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <h2>My Orders</h2>
       <Stack
         direction="row"
@@ -74,7 +117,7 @@ function ListOrders() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {orders?.map((productOrder) => (
+            {orders?.map((productOrder, indexmap) => (
               <TableRow
                 key={productOrder.id}
                 sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
@@ -87,7 +130,7 @@ function ListOrders() {
                 <TableCell align="right">
                   {productOrder.orders.length}
                 </TableCell>
-                <TableCell align="right">{productOrder.finalPrice}</TableCell>
+                <TableCell align="right">{productOrder.finalPrice.toFixed(2)}</TableCell>
                 <TableCell align="right">
                   <Stack direction="row" alignItems="center" spacing={2}>
                     <NavLink to={"/orders/addedit/"+productOrder.id}>
@@ -104,7 +147,7 @@ function ListOrders() {
 
                     <Tooltip title="Delete">
                       <IconButton
-                      onClick={()=>OrderService.delete(productOrder.id)}
+                      onClick={()=>handleDelete(indexmap)}
                         color="primary"
                         aria-label="delete"
                         component="label"

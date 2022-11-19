@@ -20,6 +20,8 @@ import FormControl from "@mui/material/FormControl";
 import Select, { SelectChangeEvent } from "@mui/material/Select";
 import { IProductResponse } from "../../utils/interfaces/product.interface";
 import ProductService from "../../core/services/Product.service";
+import { IOrderItemResponseDetail } from "../../utils/interfaces/order.interface";
+import { FormHelperText } from "@mui/material";
 
 const style = {
   position: "absolute" as "absolute",
@@ -33,86 +35,120 @@ const style = {
   p: 4,
 };
 
-export function AddProductToOrder() {
-  const [open, setOpen] = useState(false);
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
+export function AddProductToOrder(props: {
+  addEditProduct: (orderItem: IOrderItemResponseDetail,index:number) => void,
+  orderItem?:IOrderItemResponseDetail,
+  handleOpen: (opened: boolean) => void,
+  index:number
+}
 
-  const [product, setProduct] = useState("");
+) {
+  
+  const [product, setProduct] = useState<number>(0);
   const [quantity, setQuantity] = useState<number>(1);
   const [products, setProducts] = useState<IProductResponse[]>([]);
 
+  const handleAddProduct = (productId: number, quantity: number) => {
+
+    if(!(productId<=0||quantity<=0)){
+      let product: IProductResponse | undefined = products.find((value) => {
+        return value.id === productId;
+      });
+  
+      let tempProd:IOrderItemResponseDetail ={
+        id: 0,
+        quantity: quantity,
+        product: product!
+      }
+      if(props.orderItem){
+        tempProd = {
+          id: props.orderItem.id,
+          quantity: quantity,
+          product: product!
+        }
+      }
+  
+      props.addEditProduct(tempProd,props.index);
+      props.handleOpen(false)
+    }
+  };
+
   useEffect(() => {
-
-    ProductService.getAll().then((resp)=>{
-        setProducts(resp.data)
-    })
-
+    ProductService.getAll().then((resp) => {
+      setProducts(resp.data);
+      if(props.orderItem){
+        const tempProd:IProductResponse|undefined = resp.data.find((value)=>{
+          return value.id == props.orderItem?.product.id
+        })
+        
+        if(tempProd){
+          
+          setProduct(tempProd.id)
+        }
+        setQuantity(props.orderItem.quantity)
+      }
+    });
   }, []);
 
   return (
-    <>
-      <Tooltip title="Add">
-        <IconButton
-          onClick={handleOpen}
-          color="primary"
-          aria-label="add"
-          component="label"
-        >
-          <AddIcon />
-        </IconButton>
-      </Tooltip>
-
-      <Modal
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
-        <Box sx={style}>
+      <Box sx={style}>
           <Stack
             direction="column"
             alignItems="center"
             justifyContent="center"
             spacing={2}
           >
-            <FormControl variant="filled" sx={{ m: 1, minWidth: 220 }}>
+            <FormControl variant="filled" sx={{ m: 1, minWidth: 220 }}
+            error={product <= 0}
+            >
               <InputLabel id="demo-simple-select-filled-label">
                 Product
               </InputLabel>
+              
               <Select
+              
                 labelId="demo-simple-select-filled-label"
                 id="demo-simple-select-filled"
                 value={product}
-                onChange={(e) => setProduct(e.target.value)}
+                onChange={(e) => {
+                  console.log("value selected: ", e.target.value);
+                  setProduct(Number(e.target.value));
+                }}
+                
               >
-                {products.map((product, index) => (
+                {products.map((prod, index) => (
                   <MenuItem
-                    selected={index == 0 ? true : false}
+                    selected={product === prod.id}
                     key={index}
-                    value={product.id}
+                    value={prod.id}
                   >
-                    {product.name}
+                    {prod.name}
                   </MenuItem>
                 ))}
               </Select>
+              <FormHelperText>{product <= 0?"You must select a product":""}</FormHelperText>
             </FormControl>
 
             <FormControl sx={{ m: 1, minWidth: 220 }}>
               <TextField
+                error={quantity<1}
                 id="filled-basic"
-                inputProps={{ inputMode: "numeric", pattern: "[0-9]*" }}
+                inputProps={{ inputMode: "numeric", pattern: "^[1-9]\d*" }}
                 value={quantity}
                 label="Quantity"
                 variant="filled"
                 type="number"
+                helperText={quantity<1?"Quantity must be greater than 0":""}
                 onChange={(e) => setQuantity(Number(e.target.value))}
               />
             </FormControl>
-            <Button variant="outlined">Save</Button>
+            <Button
+              variant="outlined"
+              onClick={() => handleAddProduct(product, quantity)}
+            >
+              Save
+            </Button>
           </Stack>
         </Box>
-      </Modal>
-    </>
   );
 }
